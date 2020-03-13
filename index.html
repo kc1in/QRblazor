@@ -1,0 +1,158 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>BlazorTest</title>
+    <base href="./" />
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/site.css" rel="stylesheet" />
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#052767" />
+</head>
+
+<body>
+    <app>Loading...</app>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+    <script src="zxing.min.js"></script>
+    <script src="./_framework/blazor.webassembly.js"></script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            console.log('Registering service worker now');
+            navigator.serviceWorker.register('./serviceworker.js')
+                .then(function () {
+                    console.log('Service Worker Registered');
+                });
+        }
+        window.reduceStock = function () {
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "http://114.35.232.251:8088/QR/api/TagManager/QRStockEdit", true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
+            xhr.send(JSON.stringify({
+                id: document.querySelector("#result").value,
+                amount: document.querySelector("#amount").value
+            }));
+
+        }
+        window.initCamera = function () {
+
+            //var player = document.getElementById('player');
+
+            //var handleSuccess = function (stream) {
+            //    // Attach the video stream to the video element and autoplay.
+            //    player.srcObject = stream;
+            //};
+
+
+
+            //navigator.mediaDevices.getUserMedia({ video: true })
+            //    .then(handleSuccess);
+
+            //return "";
+
+            let selectedDeviceId;
+            const codeReader = new ZXing.BrowserMultiFormatReader()
+            console.log('ZXing code reader initialized')
+            codeReader.getVideoInputDevices()
+                .then((videoInputDevices) => {
+                    const sourceSelect = document.getElementById('sourceSelect')
+                    selectedDeviceId = videoInputDevices[0].deviceId
+                    if (videoInputDevices.length >= 1) {
+                        videoInputDevices.forEach((element) => {
+                            const sourceOption = document.createElement('option')
+                            sourceOption.text = element.label
+                            sourceOption.value = element.deviceId
+                            sourceSelect.appendChild(sourceOption)
+                        })
+
+                        sourceSelect.onchange = () => {
+                            selectedDeviceId = sourceSelect.value;
+                        };
+
+                        const sourceSelectPanel = document.getElementById('sourceSelectPanel')
+                        sourceSelectPanel.style.display = 'block'
+                    }
+
+                    document.getElementById('startButton').addEventListener('click', () => {
+                        codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+                            if (result) {
+                                console.log(result)
+                                document.getElementById('result').value = result.text
+                            }
+                            if (err && !(err instanceof ZXing.NotFoundException)) {
+                                console.error(err)
+                                document.getElementById('result').value = err
+                            }
+                        })
+                        console.log(`Started continous decode from camera with id ${selectedDeviceId}`)
+                    })
+
+                    document.getElementById('resetButton').addEventListener('click', () => {
+                        codeReader.reset()
+                        //document.getElementById('result').textContent = '';
+                        console.log('Reset.')
+                    })
+
+                })
+                .catch((err) => {
+                    console.error(err)
+                })
+
+        }
+
+
+        window.photo = function () {
+            var player = document.getElementById('player');
+            var snapshotCanvas = document.getElementById('snapshot');
+
+            var context = snapshot.getContext('2d');
+            // Draw the video frame to the canvas.
+            context.drawImage(player, 0, 0, snapshotCanvas.width,
+                snapshotCanvas.height);
+
+            var photoData = snapshotCanvas.toDataURL("image/jpeg", 0.5);
+            document.getElementById('photoData').value = photoData;
+            return "";
+        }
+
+        window.clearData = function () {
+            localStorage.clear();
+            var list = document.getElementById("list");
+            list.innerHTML = '';
+            alert("datacleared!");
+            return "";
+        }
+
+        window.loadData = function () {
+            entries = Object.entries(localStorage);
+            for (var key in entries) {
+                console.log(key)
+                var list = document.getElementById("list");
+                var p = document.createElement('p');
+                p.textContent = entries[key][1];
+                list.appendChild(p);
+            }
+            return "";
+        }
+
+        window.saveText = function () {
+            var text = document.getElementById("text").value;
+            var photoData = document.getElementById("photoData").value;
+            console.log(text);
+            localStorage.setItem('data' + new Date(), JSON.stringify({ date: new Date(), text: text, photo: photoData }));
+            return "";
+        }
+
+    </script>
+</body>
+
+</html>
