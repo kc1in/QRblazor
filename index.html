@@ -152,6 +152,63 @@
             return "";
         }
 
+
+        window.getNotificationPermission = () => {
+            Notification.requestPermission(function (status) {
+                // This allows to use Notification.permission with Chrome/Safari
+                if (Notification.permission !== status) {
+                    Notification.permission = status;
+                }
+            });
+        }
+
+        window.showNotify = (num) => {
+            var defaultNotify = document.getElementById("defaultNotify").value;
+            if (num)
+                defaultNotify += num;
+            if (Notification && Notification.permission === "granted") {
+                //var n = new Notification(defaultNotify);
+                navigator.serviceWorker.ready.then(function (registration) {
+                    registration.showNotification(defaultNotify);
+                });
+            }
+            // If the user hasn't told if he wants to be notified or not
+            // Note: because of Chrome, we are not sure the permission property
+            // is set, therefore it's unsafe to check for the "default" value.
+            else if (Notification && Notification.permission !== "denied") {
+                Notification.requestPermission(function (status) {
+                    if (Notification.permission !== status) {
+                        Notification.permission = status;
+                    }
+                    // If the user said okay
+                    if (status === "granted") {
+                        //var n = new Notification(defaultNotify);
+                        navigator.serviceWorker.ready.then(function (registration) {
+                            registration.showNotification(defaultNotify);
+                        });
+                    }
+                    // Otherwise, we can fallback to a regular modal alert
+                    else {
+                        alert('alert' + defaultNotify);
+                    }
+                });
+            }
+            // If the user refuses to get notified
+            else {
+                // We can fallback to a regular modal alert
+                alert('alert' + defaultNotify);
+            }
+        }
+        intervalId = 0;
+        num = 0
+        window.showNotifyCon = () => {
+            intervalId = setInterval(() => { window.showNotify(num++) }, 3000)
+        }
+
+        window.stopNotifyCon = () => {
+            clearInterval(intervalId)
+        }
+
     </script>
 </body>
 
